@@ -9,11 +9,11 @@ class NormalGround {
     private val color = arrayOf(
             0x00000000, // 0
             0xff000000, // 1
-            0xff2ec720, // 2
-            0xff177848, // 3
-            0xff78681a, // 4
-            0xffc7995c, // 5
-            0xffe0c057  // 6
+            0xff000000, // 2
+            0xff000000, // 3
+            0xffffffff, // 4
+            0xffffffff, // 5
+            0xffffffff  // 6
     )
 
     private val position: Array<IntArray> = arrayOf(

@@ -6,8 +6,10 @@ import android.graphics.*
 import android.util.Log
 
 class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
-    private val holder: SurfaceHolder
-    private val surface: SurfaceView
+    private val TAG = SlwSurfaceHolder::class.java.simpleName
+
+    private val surfaceHolder: SurfaceHolder
+    private val surfaceView: SurfaceView
     private val character = Character()
 
     private var thread: Thread? = null
@@ -15,36 +17,36 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
     private var isJumping = false
     private var isInTheAir = false
     private var initialVelocity = 0
-    private var migrationLength : Int = 0
+    private var migrationLength = 0
 
     enum class Direction {
         NONE, RIGHT, LEFT, TOP, UNDER
     }
 
     constructor(surface: SurfaceView) {
-        holder = surface.holder
-        holder.addCallback(this)
-        this.surface = surface
+        surfaceHolder = surface.holder
+        surfaceHolder.addCallback(this)
+        surfaceView = surface
     }
 
-    fun jump() {
+    fun click() {
         if(!isInTheAir) {
             initialVelocity = 70
             isJumping = true
         }
     }
 
-    fun run(isRightDirection: Boolean) {
-        if(isRightDirection) {
+    fun lean(isRight: Boolean) {
+        if(isRight) {
             character.turnRight()
-            migrationLength = 50
+            migrationLength = 40
         } else {
             character.turnLeft()
-            migrationLength = -50
+            migrationLength = -40
         }
     }
 
-    fun stop() {
+    fun flat() {
         migrationLength = 0
     }
 
@@ -56,10 +58,10 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
         val ground = NormalGround()
         val bitmap = ground.createGround(1)
         var x = 0
-        val y = (surface.height - bitmap.height).toDouble()
+        val y = (surfaceView.height - bitmap.height).toDouble()
 
         val paint = Paint()
-        while (surface.width > x) {
+        while (surfaceView.width > x) {
             canvas.drawBitmap(bitmap, x.toFloat(), y.toFloat(), paint)
             x += bitmap.width
         }
@@ -67,13 +69,12 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
         return bitmap.height
     }
 
-    private fun drawBlock(canvas: Canvas, destinationX: Double, destinationY: Double): BitmapData {
+    private fun drawBlock(canvas: Canvas): BitmapData {
         val block = NormalBlock()
         val paint = Paint()
         val bitmap = block.createBlock(0)
-        canvas.drawBitmap(bitmap, (bitmap.height * 5).toFloat(), (surface.height - bitmap.height * 4).toFloat(), paint)
-//        canvas.drawBitmap(bitmap, (bitmap.height * 0).toFloat(), (surface.height - bitmap.height * 4).toFloat(), paint)
-        return BitmapData(bitmap, (bitmap.height * 5).toDouble(), (surface.height - bitmap.height * 4).toDouble())
+        canvas.drawBitmap(bitmap, (bitmap.height * 5).toFloat(), (surfaceView.height - bitmap.height * 4).toFloat(), paint)
+        return BitmapData(bitmap, (bitmap.height * 5).toDouble(), (surfaceView.height - bitmap.height * 4).toDouble())
     }
 
     private fun isHit(bitmap1: BitmapData, bitmap2: BitmapData, bitmap3: BitmapData): Direction {
@@ -81,15 +82,15 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
                     &&
                             Math.abs(bitmap1.y - bitmap2.y) < bitmap1.bitmap.height/2 + bitmap2.bitmap.height/2 //縦の判定
         ) {
-            if (b((bitmap1.x + bitmap1.bitmap.width), bitmap1.y,
+            if (isIntersect((bitmap1.x + bitmap1.bitmap.width), bitmap1.y,
                             (bitmap1.x + bitmap1.bitmap.width), (bitmap1.y + bitmap1.bitmap.height),
                             bitmap3, bitmap2)) {
                 return Direction.RIGHT
-            } else if (b(bitmap1.x, (bitmap1.y + bitmap1.bitmap.height),
+            } else if (isIntersect(bitmap1.x, (bitmap1.y + bitmap1.bitmap.height),
                             (bitmap1.x + bitmap1.bitmap.width), (bitmap1.y + bitmap1.bitmap.height),
                             bitmap2, bitmap3)) {
                 return Direction.UNDER
-            } else if (b(bitmap1.x, bitmap1.y,
+            } else if (isIntersect(bitmap1.x, bitmap1.y,
                             bitmap1.x, (bitmap1.y + bitmap1.bitmap.height),
                             bitmap2, bitmap3)) {
                 return Direction.LEFT
@@ -101,26 +102,24 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
         }
     }
 
-    private fun b(ax: Double, ay: Double, bx: Double, by: Double, bitmap2: BitmapData, bitmap3: BitmapData): Boolean {
-        if (a(ax, ay, bx, by, bitmap2.x, bitmap2.y, bitmap3.x, bitmap3.y)) {
-            return true
-        } else if (a(ax, ay, bx, by, (bitmap2.x + bitmap2.bitmap.width), bitmap2.y,
-                        (bitmap3.x + bitmap3.bitmap.width), bitmap3.y)) {
-            return true
-        } else if (a(ax, ay, bx, by, bitmap2.x, (bitmap2.y + bitmap2.bitmap.height),
-                        bitmap3.x, (bitmap3.y + bitmap3.bitmap.height))) {
-            return true
-        } else {
-            return a(ax, ay, bx, by, (bitmap2.x + bitmap2.bitmap.width),
+    private fun isIntersect(ax: Double, ay: Double, bx: Double, by: Double, bitmap2: BitmapData, bitmap3: BitmapData): Boolean {
+        return when {
+            isIntersect(ax, ay, bx, by, bitmap2.x, bitmap2.y, bitmap3.x, bitmap3.y) -> true
+            isIntersect(ax, ay, bx, by, (bitmap2.x + bitmap2.bitmap.width), bitmap2.y,
+                    (bitmap3.x + bitmap3.bitmap.width), bitmap3.y) -> true
+            isIntersect(ax, ay, bx, by, bitmap2.x, (bitmap2.y + bitmap2.bitmap.height),
+                    bitmap3.x, (bitmap3.y + bitmap3.bitmap.height)) -> true
+            else -> isIntersect(ax, ay, bx, by, (bitmap2.x + bitmap2.bitmap.width),
                     (bitmap2.y + bitmap2.bitmap.height),
                     (bitmap3.x + bitmap3.bitmap.width), (bitmap3.y + bitmap3.bitmap.height))
         }
     }
-        private fun a(ax: Double, ay: Double, bx: Double, by: Double, cx: Double, cy: Double, dx: Double, dy: Double): Boolean {
-        var ta = (cx - dx) * (ay - cy) + (cy - dy) * (cx - ax);
-        var tb = (cx - dx) * (by - cy) + (cy - dy) * (cx - bx);
-        var tc = (ax - bx) * (cy - ay) + (ay - by) * (ax - cx);
-        var td = (ax - bx) * (dy - ay) + (ay - by) * (ax - dx);
+
+    private fun isIntersect(ax: Double, ay: Double, bx: Double, by: Double, cx: Double, cy: Double, dx: Double, dy: Double): Boolean {
+        var ta = (cx - dx) * (ay - cy) + (cy - dy) * (cx - ax)
+        var tb = (cx - dx) * (by - cy) + (cy - dy) * (cx - bx)
+        var tc = (ax - bx) * (cy - ay) + (ay - by) * (ax - cx)
+        var td = (ax - bx) * (dy - ay) + (ay - by) * (ax - dx)
 
         return tc * td <= 0 && ta * tb <= 0
     }
@@ -155,17 +154,17 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
 
     // Runnable
     override fun run() {
-        var time = 1.0
+        var time = 2.0
         var x = 0
         var y = 0.0
         while (!isCancel) {
-            val canvas = holder.lockCanvas()
+            val canvas = surfaceHolder.lockCanvas()
 
             drawBackground(canvas)
 
             var destinationX = when {
-                    surface.width < (x + migrationLength ) -> -character.getWidth()
-                    -character.getWidth()  > (x + migrationLength ) -> surface.width
+                surfaceView.width < (x + migrationLength ) -> -character.getWidth()
+                    -character.getWidth()  > (x + migrationLength ) -> surfaceView.width
                     else -> x + migrationLength
             }
 
@@ -174,18 +173,18 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
             if (isJumping) {
                 var hight = calculateHeight(time)
                 if (hight <= 0) {
-                    time = 1.0
+                    time = 2.0
                     isJumping = false
                 } else {
                     time++
                 }
-                destinationY = (surface.height - groundHeight - character.getHeight()).toDouble() - hight
+                destinationY = (surfaceView.height - groundHeight - character.getHeight()).toDouble() - hight
             } else {
                 if ((y != 0.0) &&
-                        (y != (surface.height - groundHeight - character.getHeight()).toDouble())) {
+                        (y != (surfaceView.height - groundHeight - character.getHeight()).toDouble())) {
                     destinationY = y
                 } else {
-                    destinationY = (surface.height - groundHeight - character.getHeight()).toDouble()
+                    destinationY = (surfaceView.height - groundHeight - character.getHeight()).toDouble()
                 }
             }
 
@@ -197,7 +196,7 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
                         else -> character.run()
                     }
 
-            var blockBitmap = drawBlock(canvas, destinationX.toDouble(), destinationY)
+            var blockBitmap = drawBlock(canvas)
 
             val paint = Paint()
 
@@ -205,39 +204,32 @@ class SlwSurfaceHolder : SurfaceHolder.Callback, Runnable {
                     BitmapData(characterBitmap, destinationX.toDouble(), destinationY),
                     BitmapData(characterBitmap, x.toDouble(), y))
             if (direction == Direction.UNDER) {
-                Log.d("hogehoge", "Under")
-                canvas.drawBitmap(characterBitmap, destinationX.toFloat(), (blockBitmap.y.toFloat() + blockBitmap.bitmap.height), paint)
+                Log.d(TAG, "Under")
                 initialVelocity = 0
                 x = destinationX
                 y = (blockBitmap.y + blockBitmap.bitmap.height)
             } else if (direction == Direction.RIGHT) {
-                Log.d("hogehoge", "Right")
-                canvas.drawBitmap(characterBitmap, (blockBitmap.x.toFloat() + blockBitmap.bitmap.width),
-                        destinationY.toFloat(), paint)
+                Log.d(TAG, "Right")
                 initialVelocity = 0
                 x = (blockBitmap.x + blockBitmap.bitmap.width).toInt()
                 y = destinationY
             } else if (direction == Direction.LEFT) {
-                Log.d("hogehoge", "Left")
-                canvas.drawBitmap(characterBitmap, (blockBitmap.x.toFloat() - character.getWidth()),
-                        destinationY.toFloat(), paint)
+                Log.d(TAG, "Left")
                 initialVelocity = 0
                 x = blockBitmap.x.toInt() - character.getWidth()
                 y = destinationY
             } else if (direction == Direction.TOP) {
-                Log.d("hogehoge", "Top")
-                canvas.drawBitmap(characterBitmap, destinationX.toFloat(), (blockBitmap.y - character.getHeight()).toFloat(), paint)
+                Log.d(TAG, "Top")
                 initialVelocity = 0
-
                 x = destinationX
                 y = blockBitmap.y - character.getHeight()
             } else {
-                canvas.drawBitmap(characterBitmap, destinationX.toFloat(), destinationY.toFloat(), paint)
                 x = destinationX
                 y = destinationY
             }
+            canvas.drawBitmap(characterBitmap, x.toFloat(), y.toFloat(), paint)
 
-            holder.unlockCanvasAndPost(canvas)
+            surfaceHolder.unlockCanvasAndPost(canvas)
             Thread.sleep(100L)
         }
     }

@@ -9,18 +9,18 @@ class Character {
     private val color = arrayOf(
             0x00000000, // 0
             0xff000000, // 1
-            0xffffffff, // 2
-            0xff0b4f22, // 3
-            0xff86581e, // 4
-            0xff371977, // 5
-            0xff3af67d, // 6
-            0xff2abe5c, // 7
-            0xffffde73, // 8
-            0xffdea539, // 9
-            0xfff6c79a, // 10
-            0xfff59035, // 11
-            0xff966df5, // 12
-            0xff6d3ef5  // 13
+            0xff000000, // 2
+            0xff000000, // 3
+            0xff000000, // 4
+            0xff000000, // 5
+            0xff000000, // 6
+            0xff000000, // 7
+            0xff000000, // 8
+            0xff000000, // 9
+            0xff000000, // 10
+            0xff000000, // 11
+            0xff000000, // 12
+            0xff000000  // 13
     )
 
     private val position: Array<IntArray> = arrayOf(

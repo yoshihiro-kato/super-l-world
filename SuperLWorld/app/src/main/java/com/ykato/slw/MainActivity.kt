@@ -12,22 +12,27 @@ import android.view.SurfaceView
 import android.view.View
 
 class MainActivity : AppCompatActivity(), View.OnClickListener, SensorEventListener {
-    private var _mainSurfaceHolder : SlwSurfaceHolder? = null
-    private var _sensorManager: SensorManager? = null
+    private val TAG = MainActivity::class.java.simpleName
+    private var surfaceHolder : SlwSurfaceHolder? = null
+    private var sensorManager: SensorManager? = null
 
     private fun initSensor() {
-        _sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
     }
 
     private fun setSensor() {
-        _sensorManager!!.registerListener(
+        sensorManager!!.registerListener(
                 this,
-                _sensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                sensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
                 SensorManager.SENSOR_DELAY_GAME)
     }
 
     private fun unsetSensor() {
-        _sensorManager!!.unregisterListener(this)
+        sensorManager!!.unregisterListener(this)
+    }
+
+    private fun destroySensor() {
+        sensorManager = null
     }
 
     // AppCompatActivity
@@ -43,35 +48,43 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, SensorEventListe
 
         val surfaceView = findViewById<SurfaceView>(R.id.surfaceView)
         surfaceView.setOnClickListener(this)
-        _mainSurfaceHolder = SlwSurfaceHolder(surfaceView)
+        surfaceHolder = SlwSurfaceHolder(surfaceView)
 
         setSensor()
     }
 
     override fun onPause() {
         super.onPause()
-        _mainSurfaceHolder = null
+        surfaceHolder = null
 
         unsetSensor()
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+
+        destroySensor()
+    }
+
     // OnClickListener
     override fun onClick(p0: View?) {
-        _mainSurfaceHolder!!.jump()
+        if (surfaceHolder != null) {
+            surfaceHolder!!.click()
+        }
     }
 
     // SensorEventListener
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-        Log.d("SurfaceViewActivity", "onAccuracyChanged")
+        Log.d(TAG, "onAccuracyChanged")
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event != null) {
             if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
                 when {
-                    event.values[1] == 0F -> _mainSurfaceHolder!!.stop()
-                    event.values[1] > 0 -> _mainSurfaceHolder!!.run(true)
-                    else -> _mainSurfaceHolder!!.run(false)
+                    event.values[1] == 0F -> surfaceHolder!!.flat()
+                    event.values[1] > 0 -> surfaceHolder!!.lean(true)
+                    else -> surfaceHolder!!.lean(false)
                 }
             }
         }

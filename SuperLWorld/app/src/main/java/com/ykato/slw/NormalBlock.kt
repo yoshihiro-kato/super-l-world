@@ -10,8 +10,8 @@ class NormalBlock {
             0x00000000, // 0
             0xff000000, // 1
             0xffffffff, // 2
-            0xfffee13d, // 3
-            0xffddae50  // 4
+            0xff000000, // 3
+            0xff000000  // 4
     )
 
     private val position: Array<IntArray> = arrayOf(
